@@ -1,0 +1,92 @@
+<?php
+
+namespace Crazyssl;
+
+use GoGetSSL\Exceptions\RequestException;
+use GoGetSSL\Resources\Order;
+use GoGetSSL\Resources\Product;
+use GuzzleHttp\Client as GuzzleHttpClient;
+
+use function GuzzleHttp\json_decode;
+
+/**
+ * Sdk main class
+ */
+class Client
+{
+    const CRAZYSSL_ORIGIN = 'https://api.crazyssl.com/ssl/v3';
+    const TRUSTOCEAN_ORIGIN = 'https://api.trustocean.com/ssl/v3';
+
+    /**
+     * @var \Crazyssl\Resources\Product
+     */
+    public $product;
+
+    /**
+     * @var \Crazyssl\Resources\Order
+     */
+    public $order;
+
+    /**
+     * @var string
+     */
+    protected $username;
+
+    /**
+     * @var string
+     */
+    protected $password;
+
+    /**
+     * @var string
+     */
+    protected $apiOrigin;
+
+    /**
+     * 构造
+     *
+     * @param string $username Crazyssl的API用户名 
+     * @param string $password Crazyssl的API密码
+     * @param string $apiOrigin Crazyssl的API地址
+     */
+    public function __construct($username, $password, $apiOrigin = null)
+    {
+        if ($apiOrigin === null) {
+            $apiOrigin = self::CRAZYSSL_ORIGIN;
+        }
+        $this->username = $username;
+        $this->password = $password;
+        $this->apiOrigin = $apiOrigin;
+
+        $this->product = new Product($this);
+        $this->order = new Order($this);
+    }
+
+    /**
+     * 魔术
+     *
+     * @param string $method
+     * @param string $uri
+     * @param array $parameters
+     * @return \Crazyssl\Response\Interfaces\BaseResponse
+     */
+    public function request($method, $uri, $parameters = [])
+    {
+        $http = new GuzzleHttpClient();
+
+        $parameters = array_merge(['username' => $this->username, 'password' => $this->password], (array) $parameters);
+
+        $uri = $this->apiOrigin . '/' . $uri;
+
+        $response = $http->{strtolower($method)}($uri, [
+            'form_params' => $parameters,
+        ]);
+
+        $json = json_decode($response->getBody());
+
+        if (!isset($json->status) || $json->status != 'success') {
+            throw new RequestException(isset($json->message) ? $json->message : '请求接口出错', isset($json->error_code) ? $json->error_code : -1);
+        }
+        return $json;
+    }
+}
