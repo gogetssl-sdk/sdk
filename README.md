@@ -19,7 +19,7 @@ composer require gogetssl/sdk
 ```php
 use GoGetSSL\Client as GoGetSSL;
 
-$sdk = new GoGetSSL('你的 API 用户名', '你的 API 秘钥', 'https://api.trustocean.com/ssl/v3');
+$sdk = new GoGetSSL('你的 API 用户名', '你的 API 秘钥');
 $list = $sdk->product->getProductList();
 print_r($list);
 ```
